@@ -6,16 +6,26 @@ import net.corda.djvm.code.EmitterContext
 import net.corda.djvm.code.Instruction
 import net.corda.djvm.code.instructions.MemberAccessInstruction
 import org.objectweb.asm.Opcodes.*
+import java.util.Collections.unmodifiableSet
 
 /**
  * The enum-related methods on [Class] all require that enums use [java.lang.Enum]
- * as their super class. So replace their all invocations with ones to equivalent
+ * as their super class. So replace all their invocations with ones to equivalent
  * methods on the DJVM class that require [sandbox.java.lang.Enum] instead.
  *
  * The [java.security.ProtectionDomain] object is also untransformable into sandbox
  * objects.
+ *
+ * An annotation must implement [java.lang.annotation.Annotation] and have no other
+ * interfaces. This means that the JVM cannot accept anything that implements
+ * [sandbox.java.lang.annotation.Annotation] as an annotation! We must therefore
+ * redirect the annotation-related methods on [Class] so that the DJVM can perform
+ * some mappings.
  */
 object RewriteClassMethods : Emitter {
+    private val GET_ANNOTATION = unmodifiableSet(setOf("getAnnotation", "getDeclaredAnnotation"))
+    private val GET_ANNOTATIONS = unmodifiableSet(setOf("getAnnotations", "getDeclaredAnnotations"))
+    private val GET_BY_TYPE = unmodifiableSet(setOf("getAnnotationsByType", "getDeclaredAnnotationsByType"))
 
     override fun emit(context: EmitterContext, instruction: Instruction) = context.emit {
         if (instruction is MemberAccessInstruction && instruction.className == "java/lang/Class") {
@@ -48,6 +58,34 @@ object RewriteClassMethods : Emitter {
                         owner = DJVM_NAME,
                         name = "getClassLoader",
                         descriptor = "(Ljava/lang/Class;)Ljava/lang/ClassLoader;"
+                    )
+                    preventDefault()
+                } else if (instruction.memberName == "isAnnotationPresent" && instruction.descriptor == "(Ljava/lang/Class;)Z") {
+                    invokeStatic(
+                        owner = DJVM_NAME,
+                        name = "isAnnotationPresent",
+                        descriptor = "(Ljava/lang/Class;Ljava/lang/Class;)Z"
+                    )
+                    preventDefault()
+                } else if (instruction.memberName in GET_ANNOTATION && instruction.descriptor == "(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;") {
+                    invokeStatic(
+                        owner = DJVM_NAME,
+                        name = instruction.memberName,
+                        descriptor = "(Ljava/lang/Class;Ljava/lang/Class;)Lsandbox/java/lang/annotation/Annotation;"
+                    )
+                    preventDefault()
+                } else if (instruction.memberName in GET_ANNOTATIONS && instruction.descriptor == "()[Ljava/lang/annotation/Annotation;") {
+                    invokeStatic(
+                        owner = DJVM_NAME,
+                        name = instruction.memberName,
+                        descriptor = "(Ljava/lang/Class;)[Lsandbox/java/lang/annotation/Annotation;"
+                    )
+                    preventDefault()
+                } else if (instruction.memberName in GET_BY_TYPE && instruction.descriptor == "(Ljava/lang/Class;)[Ljava/lang/annotation/Annotation;") {
+                    invokeStatic(
+                        owner = DJVM_NAME,
+                        name = instruction.memberName,
+                        descriptor = "(Ljava/lang/Class;Ljava/lang/Class;)[Lsandbox/java/lang/annotation/Annotation;"
                     )
                     preventDefault()
                 }
