@@ -780,7 +780,7 @@ fun getAnnotations(clazz: Class<*>): Array<out Annotation> {
 }
 
 fun <T: Annotation> getAnnotationsByType(clazz: Class<*>, annotationType: Class<T>): Array<T> {
-    return clazz.getAnnotationsByType(annotationType.toRealAnnotationType())
+    return doPrivileged(DJVMAnnotationByTypeAction(clazz, annotationType.toRealAnnotationType()))
         .toDJVMAnnotations(annotationType)
 }
 
@@ -793,7 +793,7 @@ fun getDeclaredAnnotations(clazz: Class<*>): Array<out Annotation> {
 }
 
 fun <T: Annotation> getDeclaredAnnotationsByType(clazz: Class<*>, annotationType: Class<T>): Array<T> {
-    return clazz.getDeclaredAnnotationsByType(annotationType.toRealAnnotationType())
+    return doPrivileged(DJVMDeclaredAnnotationByTypeAction(clazz, annotationType.toRealAnnotationType()))
         .toDJVMAnnotations(annotationType)
 }
 
@@ -913,5 +913,23 @@ private class DJVMAnnotationAction<T: Annotation>(
             arrayOf(annotationType),
             DJVMAnnotationHandler(annotationType, underlying)
         ) as T
+    }
+}
+
+private class DJVMAnnotationByTypeAction(
+    private val clazz: Class<*>,
+    private val annotationType: Class<out kotlin.Annotation>
+) : PrivilegedExceptionAction<Array<out kotlin.Annotation>> {
+    override fun run(): Array<out kotlin.Annotation> {
+        return clazz.getAnnotationsByType(annotationType)
+    }
+}
+
+private class DJVMDeclaredAnnotationByTypeAction(
+    private val clazz: Class<*>,
+    private val annotationType: Class<out kotlin.Annotation>
+) : PrivilegedExceptionAction<Array<out kotlin.Annotation>> {
+    override fun run(): Array<out kotlin.Annotation> {
+        return clazz.getDeclaredAnnotationsByType(annotationType)
     }
 }
