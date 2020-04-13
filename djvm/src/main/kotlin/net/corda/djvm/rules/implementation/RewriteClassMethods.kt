@@ -64,28 +64,28 @@ object RewriteClassMethods : Emitter {
                     invokeStatic(
                         owner = DJVM_NAME,
                         name = "isAnnotationPresent",
-                        descriptor = "(Ljava/lang/Class;Ljava/lang/Class;)Z"
+                        descriptor = "(Ljava/lang/reflect/AnnotatedElement;Ljava/lang/Class;)Z"
                     )
                     preventDefault()
                 } else if (instruction.memberName in GET_ANNOTATION && instruction.descriptor == "(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;") {
                     invokeStatic(
                         owner = DJVM_NAME,
                         name = instruction.memberName,
-                        descriptor = "(Ljava/lang/Class;Ljava/lang/Class;)Lsandbox/java/lang/annotation/Annotation;"
+                        descriptor = "(Ljava/lang/reflect/AnnotatedElement;Ljava/lang/Class;)Lsandbox/java/lang/annotation/Annotation;"
                     )
                     preventDefault()
                 } else if (instruction.memberName in GET_ANNOTATIONS && instruction.descriptor == "()[Ljava/lang/annotation/Annotation;") {
                     invokeStatic(
                         owner = DJVM_NAME,
                         name = instruction.memberName,
-                        descriptor = "(Ljava/lang/Class;)[Lsandbox/java/lang/annotation/Annotation;"
+                        descriptor = "(Ljava/lang/reflect/AnnotatedElement;)[Lsandbox/java/lang/annotation/Annotation;"
                     )
                     preventDefault()
                 } else if (instruction.memberName in GET_BY_TYPE && instruction.descriptor == "(Ljava/lang/Class;)[Ljava/lang/annotation/Annotation;") {
                     invokeStatic(
                         owner = DJVM_NAME,
                         name = instruction.memberName,
-                        descriptor = "(Ljava/lang/Class;Ljava/lang/Class;)[Lsandbox/java/lang/annotation/Annotation;"
+                        descriptor = "(Ljava/lang/reflect/AnnotatedElement;Ljava/lang/Class;)[Lsandbox/java/lang/annotation/Annotation;"
                     )
                     preventDefault()
                 }
